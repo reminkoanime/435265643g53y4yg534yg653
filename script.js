@@ -131,7 +131,7 @@ async function loadCounterFromSupabase(counterType) {
 // Установить начальные значения счетчиков
 async function initializeCounters() {
     const initialValues = {
-        wish: 132843,
+        wish: 14323,
         // ВАЖНО: Telegram и TikTok НЕ включаем - их обновляет бот с реальным количеством подписчиков
         project_progress: Math.round(INITIAL_PROGRESS * 10) // Умножаем на 10 для хранения в Supabase
     };

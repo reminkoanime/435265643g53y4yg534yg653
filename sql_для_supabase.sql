@@ -52,8 +52,8 @@ CREATE POLICY "Anyone can read clicks" ON public.startzero_user_clicks
 -- Устанавливаем начальные значения только для wish и project_progress
 INSERT INTO public.startzero_counters (counter_type, count) 
 VALUES 
-  ('wish', 132843),
-  ('project_progress', 85)
+  ('wish', 14323),
+  ('project_progress', 850)
 ON CONFLICT (counter_type) DO UPDATE 
 SET count = CASE 
     WHEN startzero_counters.count < EXCLUDED.count THEN EXCLUDED.count
@@ -61,9 +61,7 @@ SET count = CASE
   END,
   updated_at = TIMEZONE('utc'::text, NOW());
 
--- Telegram, Instagram и TikTok будут созданы ботом автоматически при первом обновлении
--- Если нужно установить начальные значения вручную, выполните:
--- INSERT INTO public.startzero_counters (counter_type, count) VALUES ('telegram', 0), ('instagram', 0), ('tiktok', 0)
+-- Telegram и TikTok будут созданы ботом автоматически при первом обновлении
 -- ON CONFLICT (counter_type) DO NOTHING;
 
 -- Шаг 7: Публикуем таблицы через PostgREST API (ВАЖНО для Netlify и внешнего доступа!)
