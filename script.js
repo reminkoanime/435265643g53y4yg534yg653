@@ -68,15 +68,12 @@ function getSupabaseClient() {
 async function loadCounterFromSupabase(counterType) {
     const client = getSupabaseClient();
     
-    // Для Telegram и TikTok не используем localStorage - только Supabase
-    const socialNetworks = ['telegram', 'tiktok'];
-    const isSocialNetwork = socialNetworks.includes(counterType);
+    // Wish, Telegram и TikTok — только из Supabase (можно править в базе)
+    const dbOnlyCounters = ['wish', 'telegram', 'tiktok'];
+    const isDbOnly = dbOnlyCounters.includes(counterType);
     
     if (!client) {
-        // Fallback на localStorage если Supabase недоступен (кроме соцсетей)
-        if (isSocialNetwork) {
-            return 0; // Для соцсетей не используем localStorage
-        }
+        if (isDbOnly) return 0; // Wish и соцсети — только из базы
         const localKey = counterType === 'wish' ? WISH_COUNT_KEY : SOCIAL_COUNT_PREFIX + counterType;
         return parseFloat(localStorage.getItem(localKey) || '0');
     }
@@ -92,26 +89,21 @@ async function loadCounterFromSupabase(counterType) {
         
         if (error) {
             console.error(`Ошибка загрузки счетчика ${counterType}:`, error);
-            if (isSocialNetwork) {
-                return 0;
-            }
+            if (isDbOnly) return 0;
             const localKey = counterType === 'wish' ? WISH_COUNT_KEY : SOCIAL_COUNT_PREFIX + counterType;
             return parseFloat(localStorage.getItem(localKey) || '0');
         }
         
         if (!data) {
             console.warn(`Счетчик ${counterType} не найден в Supabase`);
-            if (isSocialNetwork) {
-                return 0;
-            }
+            if (isDbOnly) return 0;
             const localKey = counterType === 'wish' ? WISH_COUNT_KEY : SOCIAL_COUNT_PREFIX + counterType;
             return parseFloat(localStorage.getItem(localKey) || '0');
         }
         
         const count = data?.count || 0;
         
-        // Для соцсетей логируем информацию для отладки
-        if (isSocialNetwork) {
+        if (isDbOnly) {
             const updateTime = data.updated_at ? new Date(data.updated_at).toLocaleString('ru-RU') : 'N/A';
             console.log(`📊 ${counterType} из Supabase: ${count.toLocaleString('ru-RU')} подписчиков (обновлено: ${updateTime})`);
         }
@@ -119,10 +111,7 @@ async function loadCounterFromSupabase(counterType) {
         return count;
     } catch (error) {
         console.error(`Ошибка загрузки счетчика ${counterType}:`, error);
-        // Для соцсетей не используем localStorage fallback
-        if (isSocialNetwork) {
-            return 0;
-        }
+        if (isDbOnly) return 0;
         const localKey = counterType === 'wish' ? WISH_COUNT_KEY : SOCIAL_COUNT_PREFIX + counterType;
         return parseFloat(localStorage.getItem(localKey) || '0');
     }
@@ -130,9 +119,9 @@ async function loadCounterFromSupabase(counterType) {
 
 // Установить начальные значения счетчиков
 async function initializeCounters() {
+    // ВАЖНО: wish — только из базы, не перезаписываем (редактируй в Supabase)
+    // Telegram и TikTok — обновляет бот
     const initialValues = {
-        wish: 14323,
-        // ВАЖНО: Telegram и TikTok НЕ включаем - их обновляет бот с реальным количеством подписчиков
         project_progress: Math.round(INITIAL_PROGRESS * 10) // Умножаем на 10 для хранения в Supabase
     };
     
@@ -163,10 +152,8 @@ async function initializeCounters() {
         // Устанавливаем начальные значения если счетчик меньше начального или равен 0
         // ВАЖНО: Telegram и TikTok пропускаем - их обновляет бот с реальным количеством подписчиков
         for (const [counterType, initialCount] of Object.entries(initialValues)) {
-            // Пропускаем соцсети - их обновляет бот автоматически
-            if (counterType === 'telegram' || counterType === 'tiktok') {
-                continue;
-            }
+            // wish, telegram, tiktok — не трогаем, берутся только из базы
+            if (['wish', 'telegram', 'tiktok'].includes(counterType)) continue;
             
             const { data: existing } = await client
                 .from('startzero_counters')
